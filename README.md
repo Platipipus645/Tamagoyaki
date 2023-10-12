@@ -102,7 +102,7 @@ Visualization
      
      plt.show()
 
- <h1>Comparison between VGG16 and ResNet50 in Machine Learning<h1> 
+ <h1>Comparison between VGG16 and ResNet50 in Machine Learning
 
 
 1. Architecture:
