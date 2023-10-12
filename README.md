@@ -16,124 +16,88 @@ The code implements an image search engine using a pre-trained ResNet50 model fo
 4.Testing: The code includes a testing script using the unittest framework to ensure the correctness of key functionalities.
 
 
-LIBRARIES
+LIBRARIES 
 
-
+Importing necessary libraries, including tools for working with images (PIL), deep learning model (VGG16) and NumPy.
 
      import os
      import numpy as np
-     from typing import Sequence, List, Tuple
-     from keras.preprocessing import image
-     from keras.applications import ResNet50
-     from keras.applications.resnet50 import preprocess_input
-     from sklearn.metrics.pairwise import cosine_similarity
      import matplotlib.pyplot as plt
+     from keras.preprocessing import image
+     from keras.applications.vgg16 import VGG16, preprocess_input
+     from keras.models import Model
+     from pathlib import Path
      from PIL import Image
-     
-     
-     class Vectorizer:
+
+FeatureExtractor class
+
+Responsible for extracting features from images using the VGG16 model. The model is customized to return features from the fully-connected layer named 'fc1'.
+The fully-connected layer 'fc1' typically serves as a feature extractor in VGG16.
+
+      class FeatureExtractor:
          def __init__(self):
-             self.resnet_model = ResNet50(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
+             base_model = VGG16(weights='imagenet')
+             self.model = Model(inputs=base_model.input, outputs=base_model.get_layer('fc1').output)
      
-         def _preprocess_image(self, img_path):
-             try:
-                 img = image.load_img(img_path, target_size=(224, 224))
-                 img_array = image.img_to_array(img)
-                 img_array = np.expand_dims(img_array, axis=0)
-                 img_array = preprocess_input(img_array)
-                 return img_array
-             except Exception as e:
-                 print(f"Error processing image at {img_path}: {e}")
-                 return None
+         def extract(self, img):
+             img = img.resize((224, 224))
+             img = img.convert('RGB')
+             x = image.img_to_array(img)
+             x = np.expand_dims(x, axis=0)
+             x = preprocess_input(x)
+             feature = self.model.predict(x)[0]
+             return feature / np.linalg.norm(feature)
      
-         def transform(self, images: Sequence[str]) -> np.ndarray:
-             features = []
-             for img_path in images:
-                 preprocess_img = self._preprocess_image(img_path)
-                 if preprocess_img is not None:
-                     feature = self.resnet_model.predict(preprocess_img)
-                     flattened_feature = feature.flatten()
-                     features.append(flattened_feature)
+     query_image_path = "C:\\Users\\PC\\Desktop\\simple_image_retrieval_dataset\\test\\leopard.jpg"
+     database_path = "C:\\Users\\PC\\Desktop\\simple_image_retrieval_dataset\\image_db"
+     collage_output_path = "C:\\Users\\PC\\Desktop\\Collage.png"
      
-             return np.array(features)
+     fe = FeatureExtractor()
+     query_feature = fe.extract(img=Image.open(query_image_path))
      
-     class ImageSearchEngine:
-         def __init__(self, vectorizer, image_vectors):
-             self.vectorizer = vectorizer
-             self.image_vectors = image_vectors
-             self.query_vector = None
+     features = []
+     paths = []
      
-         def most_similar(self, query: np.ndarray, n: int = 5) -> List[Tuple[float, str]]:
-             self.query_vector = self.vectorizer.transform(query)
-             similarities = cosine_similarity(self.query_vector, self.image_vectors)
+     for img_path in sorted(os.listdir(database_path)):
+         try:
+             if img_path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+                 feature = fe.extract(img=Image.open(os.path.join(database_path, img_path)))
+                 features.append(feature)
+                 paths.append(os.path.join(database_path, img_path))
+         except Exception as e:
+             print(f"Error processing image at {img_path}: {str(e)}. Skipping.")
      
-             top_indices = np.argsort(similarities)[:, ::-1][:, :n]
-     
-             flat_indices = top_indices.flatten()
-     
-             similar_images = [(similarities[i, j], f"Image_{j}") for i, j in enumerate(flat_indices)]
-     
-             return similar_images
-     
-         def visualize_similar_images(self, similar_images: List[Tuple[float, str]], image_db_path: str, query_image_path: str) -> None:
-             plt.figure(figsize=(15, 3))
-             plt.subplot(1, len(similar_images) + 1, 1)
-             query_img = plt.imread(query_image_path)
-             plt.imshow(query_img)
-             plt.title("Query Image")
-             plt.axis('off')
-     
-             for i, (similarity, image_name) in enumerate(similar_images):
-                 plt.subplot(1, len(similar_images) + 1, i + 2)
-                 img_path = os.path.join(image_db_path, f"{image_name}.jpg")
-                 img = plt.imread(img_path)
-                 plt.imshow(img)
-                 plt.title(f"Similarity: {similarity:.2f}\nImage Name: {image_name}")
-                 plt.axis('off')
-     
-             plt.show()
-     
-         def create_collage(self, similar_images: List[Tuple[float, str]], image_db_path: str, output_path: str) -> None:
-             if not similar_images:
-                 print("No similar images found.")
-                 return
-     
-             images = []
-             for _, image_name in similar_images:
-                 img_path = os.path.join(image_db_path, f"{image_name}.jpg")
-                 img = Image.open(img_path)
-                 images.append(img)
-     
-             width, height = images[0].size
-             collage_width = width * min(len(images), 3)
-             collage_height = height * ((len(images) - 1) // 3 + 1)
-     
-             collage = Image.new('RGB', (collage_width, collage_height))
-     
-             for i, img in enumerate(images):
-                 collage.paste(img, (i % 3 * width, i // 3 * height))
-     
-             collage.save(output_path)
-     
-     image_db_path = 'C:/Users/Flepkica/Desktop/pictures/image_db'
-     
-     image_paths = [os.path.join(image_db_path, file_name) for file_name in os.listdir(image_db_path) if file_name.endswith(('.jpg', '.jpeg', '.png'))]
-     
-     vectorizer = Vectorizer()
-     image_vectors = vectorizer.transform(image_paths)
-     
-     search_engine = ImageSearchEngine(vectorizer, image_vectors)
-     
-     query_image_paths = ['C:/Users/Flepkica/Desktop/pictures/test/pizza.jpg']
-     query_image_path = query_image_paths[0]
-     
-     batch_size = 32
-     image_batches = [image_paths[i:i + batch_size] for i in range(0, len(image_paths), batch_size)]
+     features = np.array(features)
+Similarity calculation 
 
-     for batch in image_batches:
-         image_vectors_batch = vectorizer.transform(batch)
+Calculation of the Euclidean distance between the features of the query image and database images 
 
-         similar_images = search_engine.most_similar(image_vectors_batch, n=5)
-         search_engine.visualize_similar_images(similar_images, image_db_path, query_image_path)
-         search_engine.create_collage(similar_images, image_db_path, 'output_collage.jpg')
+     dists = np.linalg.norm(features - query_feature, axis=1)
+     
+The indices of the top 6 similar images are obtained, and a list of tuples containing similarity scores and image paths is created
+
+     ids = np.argsort(dists)[:6]
+     scores = [(dists[id], paths[id]) for id in ids]
+     
+Visualization 
+
+     axes = []
+     fig = plt.figure(figsize=(8, 8))
+     for a in range(2, 8):
+         score = scores[a - 2]
+         axes.append(fig.add_subplot(2, 3, a - 1))
+         subplot_title = str(score[0])
+         axes[-1].set_title(subplot_title)
+         plt.axis('off')
+         try:
+             plt.imshow(Image.open(score[1]))
+         except Exception as e:
+     
+             print(f"Error displaying image at {score[1]}: {str(e)}. Skipping.")
+     fig.tight_layout()
+     
+     fig.savefig(collage_output_path)
+     
+     plt.show()
+
  
