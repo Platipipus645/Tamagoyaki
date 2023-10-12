@@ -29,7 +29,7 @@ Importing necessary libraries, including tools for working with images (PIL), de
      from pathlib import Path
      from PIL import Image
 
-FeatureExtractor class
+FeatureExtractor CLASS
 
 Responsible for extracting features from images using the VGG16 model. The model is customized to return features from the fully-connected layer named 'fc1'.
 The fully-connected layer 'fc1' typically serves as a feature extractor in VGG16.
@@ -70,7 +70,8 @@ The fully-connected layer 'fc1' typically serves as a feature extractor in VGG16
              print(f"Error processing image at {img_path}: {str(e)}. Skipping.")
      
      features = np.array(features)
-Similarity calculation 
+     
+SIMILARITY CALCULATION
 
 Calculation of the Euclidean distance between the features of the query image and database images 
 
@@ -81,7 +82,7 @@ The indices of the top 6 similar images are obtained, and a list of tuples conta
      ids = np.argsort(dists)[:6]
      scores = [(dists[id], paths[id]) for id in ids]
      
-Visualization 
+VISUALIZATION
 
      axes = []
      fig = plt.figure(figsize=(8, 8))
