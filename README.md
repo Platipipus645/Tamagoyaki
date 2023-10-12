@@ -198,14 +198,32 @@ Conclusion:
 
 The choice between VGG16 and ResNet50 depends on the specific requirements of the task at hand. VGG16 is a robust and simpler architecture suitable for various image recognition tasks. On the other hand, ResNet50 shines in scenarios requiring very deep networks and achieves state-of-the-art results, especially on challenging datasets. Both architectures have made significant contributions to the field of computer vision, and the choice should be guided by the complexity of the problem and available computational resources. Due to its simple architecture, VGG16 is less demanding when it comes to computational resources.
 
-6 Most similar :
-![1](https://github.com/Platipipus645/Tamagoyaki/assets/76967479/3ae71021-9e8f-4af3-8dc3-8cefac18712f)
-![2](https://github.com/Platipipus645/Tamagoyaki/assets/76967479/a01721b0-c3cf-4d22-8a31-1f53ab09d6a4)
-![Figure_1](https://github.com/Platipipus645/Tamagoyaki/assets/76967479/f12ab9f1-1140-4779-8aea-38e337e7fca6)
-
-
-
-
 
 Comparison between Euclidean distance and Cosine similarity in Machine Learning
- 
+
+Cosine Similarity:
+
+Advantages:
+Scale-Invariant: Insensitive to the scale of features, making it robust when the magnitude of differences is not crucial.
+Directional Emphasis: Emphasizes the orientation or direction of feature vectors, capturing similarity based on angles.
+
+Definition:
+Cosine similarity measures the cosine of the angle between two non-zero vectors. In the context of image similarity, it assesses the similarity of direction between feature vectors.
+
+Euclidean Distance:
+
+Definition:
+Euclidean distance, a classic metric, measures the straight-line distance between two points in Euclidean space. In the context of image similarity, it computes the geometric distance between feature vectors representing images.
+
+Advantages:
+Sensitive to Scale: Takes into account the magnitude of feature differences, making it effective when scale is critical.
+Intuitive Interpretation: Geometrically interpretable, providing an intuitive understanding of similarity in feature space.
+
+6 images with the most similarity value correspondent to the query:
+
+![1](https://github.com/Platipipus645/Tamagoyaki/assets/76967479/3ae71021-9e8f-4af3-8dc3-8cefac18712f)
+
+![2](https://github.com/Platipipus645/Tamagoyaki/assets/76967479/a01721b0-c3cf-4d22-8a31-1f53ab09d6a4)
+
+![Figure_1](https://github.com/Platipipus645/Tamagoyaki/assets/76967479/f12ab9f1-1140-4779-8aea-38e337e7fca6)
+
