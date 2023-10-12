@@ -198,6 +198,14 @@ Conclusion:
 
 The choice between VGG16 and ResNet50 depends on the specific requirements of the task at hand. VGG16 is a robust and simpler architecture suitable for various image recognition tasks. On the other hand, ResNet50 shines in scenarios requiring very deep networks and achieves state-of-the-art results, especially on challenging datasets. Both architectures have made significant contributions to the field of computer vision, and the choice should be guided by the complexity of the problem and available computational resources. Due to its simple architecture, VGG16 is less demanding when it comes to computational resources.
 
+6 Most similar :
+![1](https://github.com/Platipipus645/Tamagoyaki/assets/76967479/3ae71021-9e8f-4af3-8dc3-8cefac18712f)
+![2](https://github.com/Platipipus645/Tamagoyaki/assets/76967479/a01721b0-c3cf-4d22-8a31-1f53ab09d6a4)
+![Figure_1](https://github.com/Platipipus645/Tamagoyaki/assets/76967479/f12ab9f1-1140-4779-8aea-38e337e7fca6)
+
+
+
+
 
 Comparison between Euclidean distance and Cosine similarity in Machine Learning
  
