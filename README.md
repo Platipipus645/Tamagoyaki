@@ -50,25 +50,32 @@ The fully-connected layer 'fc1' typically serves as a feature extractor in VGG16
              feature = self.model.predict(x)[0]
              return feature / np.linalg.norm(feature)
      
-     query_image_path = "C:\\Users\\PC\\Desktop\\simple_image_retrieval_dataset\\test\\leopard.jpg"
+     query_image_path = "C:\\Users\\PC\\Desktop\\simple_image_retrieval_dataset\\test\\cat.jpg"
      database_path = "C:\\Users\\PC\\Desktop\\simple_image_retrieval_dataset\\image_db"
      collage_output_path = "C:\\Users\\PC\\Desktop\\Collage.png"
-     
+
      fe = FeatureExtractor()
+
      query_feature = fe.extract(img=Image.open(query_image_path))
-     
+
      features = []
      paths = []
+     img_names = []
+
      
-     for img_path in sorted(os.listdir(database_path)):
+          for img_path in sorted(os.listdir(database_path)):
          try:
              if img_path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
                  feature = fe.extract(img=Image.open(os.path.join(database_path, img_path)))
                  features.append(feature)
+                 img_name = Path(img_path).name
+                 img_names.append(img_name)
                  paths.append(os.path.join(database_path, img_path))
          except Exception as e:
              print(f"Error processing image at {img_path}: {str(e)}. Skipping.")
-     
+
+     np.savez("image_data.npz", features=features, img_names=img_names, paths=paths)
+
      features = np.array(features)
      
 SIMILARITY CALCULATION
@@ -102,7 +109,42 @@ VISUALIZATION
      fig.savefig(collage_output_path)
      
      plt.show()
+     
+Pinecone 
 
+     pinecone.init(api_key='969830ae-6f81-47ea-aea6-7156df76e898', environment='gcp-starter')
+     # np_vectors = np.load...__annotations__
+     # img_names = pd.read....
+     
+     index = pinecone.Index('image14')
+     vectors = [np_vector.tolist() for np_vector in np_vectors]
+     # 'id':'vec1', 
+     #   'values':[0.1, 0.2, 0.3, 0.4], 
+     
+     pairs = [(img_names[i], vector) for i, vector in enumerate(vectors)]
+     
+     query_results = index.query(vector=pairs[0], top_k=6)
+     for match in query_results.to_dict()["matches"]:
+         print(match["id"])
+     
+     saved_data = np.load("image_data.npz")
+     np_vectors = saved_data['features']
+     img_names = saved_data['img_names']
+     paths = saved_data['paths']
+     
+     vectors = [feature.tolist() for feature in features]
+     
+     pairs = list(zip(img_names, vectors))
+     index.upsert(pairs, batch_size=50)
+     
+     query_results = index.query(vector=pairs[0][1], top_k=6)
+     
+     for match in query_results.to_dict()["matches"]:
+         print(match["id"])
+     
+     plt.show() 
+
+     
 Comparison between VGG16 and ResNet50 in Machine Learning
 
 
