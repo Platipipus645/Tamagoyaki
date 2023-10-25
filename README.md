@@ -28,15 +28,9 @@ Importing necessary libraries, including tools for working with images (PIL), de
      from keras.models import Model
      from pathlib import Path
      from PIL import Image
+     from sklearn.metrics.pairwise import cosine_similarity
 
-FeatureExtractor CLASS
-
-Responsible for extracting features from images using the VGG16 model. The model is customized to return features from the fully-connected layer named 'fc1'.
-The fully-connected layer 'fc1' typically serves as a feature extractor in VGG16.
-
-** In a neural network, a fully connected layer, also known as a dense layer, is a type of layer where each neuron or node in the layer is connected to every neuron in the previous layer. It's called "fully connected" because each neuron in the current layer is linked to every neuron in the preceding layer. This type of connectivity allows the layer to capture complex relationships in the data.
-
-      class FeatureExtractor:
+     class FeatureExtractor:
          def __init__(self):
              base_model = VGG16(weights='imagenet')
              self.model = Model(inputs=base_model.input, outputs=base_model.get_layer('fc1').output)
@@ -50,99 +44,81 @@ The fully-connected layer 'fc1' typically serves as a feature extractor in VGG16
              feature = self.model.predict(x)[0]
              return feature / np.linalg.norm(feature)
      
-     query_image_path = "C:\\Users\\PC\\Desktop\\simple_image_retrieval_dataset\\test\\cat.jpg"
-     database_path = "C:\\Users\\PC\\Desktop\\simple_image_retrieval_dataset\\image_db"
-     collage_output_path = "C:\\Users\\PC\\Desktop\\Collage.png"
-
-     fe = FeatureExtractor()
-
+     def cosine_similarity(query_image_vector, image_vectors):
+         dot_products = np.dot(image_vectors, query_image_vector)
+         query_norm = np.linalg.norm(query_image_vector)
+         image_norms = np.linalg.norm(image_vectors, axis=1)
+         similarities = dot_products / (query_norm * image_norms)
+         return similarities
+     
+     query_image_path = "/home/senji/Desktop/Kvisko/ML/simple_image_retrieval_dataset/test-cases/cat.jpg"
+     database_path = "/home/senji/Desktop/Kvisko/ML/simple_image_retrieval_dataset/image-db"
+     collage_output_path = "/home/senji/Desktop/Kvisko/ML/collage.jpg"
+     features_save_path = "/home/senji/Desktop/Kvisko/ML/features.npz"
+     
+     
+     if os.path.exists(features_save_path):
+         saved_features = np.load(features_save_path)
+         features, paths = saved_features['features'], saved_features['paths']
+     else:
+         fe = FeatureExtractor()
+     
+         features = []
+         paths = []
+     
+         for img_path in sorted(os.listdir(database_path)):
+             try:
+                 if img_path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+                     feature = fe.extract(img=Image.open(os.path.join(database_path, img_path)))
+                     features.append(feature)
+                     paths.append(os.path.join(database_path, img_path))
+             except Exception as e:
+                 print(f"Error processing image at {img_path}: {str(e)}. Skipping.")
+                 continue
+     
+         features = np.array(features)
+         
+         np.savez(features_save_path, features=features, paths=paths)
+     
      query_feature = fe.extract(img=Image.open(query_image_path))
-
-     features = []
-     paths = []
-     img_names = []
-
      
-          for img_path in sorted(os.listdir(database_path)):
-         try:
-             if img_path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
-                 feature = fe.extract(img=Image.open(os.path.join(database_path, img_path)))
-                 features.append(feature)
-                 img_name = Path(img_path).name
-                 img_names.append(img_name)
-                 paths.append(os.path.join(database_path, img_path))
-         except Exception as e:
-             print(f"Error processing image at {img_path}: {str(e)}. Skipping.")
-
-     np.savez("image_data.npz", features=features, img_names=img_names, paths=paths)
-
-     features = np.array(features)
+     similarities = cosine_similarity(query_feature, features)
      
-SIMILARITY CALCULATION
-
-Calculation of the Euclidean distance between the features of the query image and database images 
-
-     dists = np.linalg.norm(features - query_feature, axis=1)
+     num_similar_images = min(5, len(similarities))
+     ids = np.argsort(similarities)[::-1][:num_similar_images]
+     scores = [(similarities[id], paths[id]) for id in ids]
      
-The indices of the top 6 similar images are obtained, and a list of tuples containing similarity scores and image paths is created
-
-     ids = np.argsort(dists)[:6]
-     scores = [(dists[id], paths[id]) for id in ids]
-     
-VISUALIZATION
-
      axes = []
-     fig = plt.figure(figsize=(8, 8))
-     for a in range(2, 8):
+     fig = plt.figure(figsize=(10, 10))
+     
+     axes.append(fig.add_subplot(3, 2, 1))
+     axes[-1].set_title("Query Image")
+     plt.axis('off')
+     plt.imshow(Image.open(query_image_path))
+     
+     for a in range(2, num_similar_images + 2):
          score = scores[a - 2]
-         axes.append(fig.add_subplot(2, 3, a - 1))
-         subplot_title = str(score[0])
+         axes.append(fig.add_subplot(3, 2, a))
+         subplot_title = f"Similarity: {score[0]:.2f}"
          axes[-1].set_title(subplot_title)
          plt.axis('off')
          try:
              plt.imshow(Image.open(score[1]))
          except Exception as e:
-     
              print(f"Error displaying image at {score[1]}: {str(e)}. Skipping.")
+     
      fig.tight_layout()
      
      fig.savefig(collage_output_path)
      
      plt.show()
-     
-Pinecone 
 
-     pinecone.init(api_key='969830ae-6f81-47ea-aea6-7156df76e898', environment='gcp-starter')
-     # np_vectors = np.load...__annotations__
-     # img_names = pd.read....
+
+
+
+      
      
-     index = pinecone.Index('image14')
-     vectors = [np_vector.tolist() for np_vector in np_vectors]
-     # 'id':'vec1', 
-     #   'values':[0.1, 0.2, 0.3, 0.4], 
-     
-     pairs = [(img_names[i], vector) for i, vector in enumerate(vectors)]
-     
-     query_results = index.query(vector=pairs[0], top_k=6)
-     for match in query_results.to_dict()["matches"]:
-         print(match["id"])
-     
-     saved_data = np.load("image_data.npz")
-     np_vectors = saved_data['features']
-     img_names = saved_data['img_names']
-     paths = saved_data['paths']
-     
-     vectors = [feature.tolist() for feature in features]
-     
-     pairs = list(zip(img_names, vectors))
-     index.upsert(pairs, batch_size=50)
-     
-     query_results = index.query(vector=pairs[0][1], top_k=6)
-     
-     for match in query_results.to_dict()["matches"]:
-         print(match["id"])
-     
-     plt.show() 
+
 
      
 Comparison between VGG16 and ResNet50 in Machine Learning
@@ -263,9 +239,12 @@ Intuitive Interpretation: Geometrically interpretable, providing an intuitive un
 
 6 images with the most similarity value correspondent to the query:
 
-![1](https://github.com/Platipipus645/Tamagoyaki/assets/76967479/3ae71021-9e8f-4af3-8dc3-8cefac18712f)
+a) Localy : 
 
-![2](https://github.com/Platipipus645/Tamagoyaki/assets/76967479/a01721b0-c3cf-4d22-8a31-1f53ab09d6a4)
+![collage](https://github.com/Platipipus645/Tamagoyaki/assets/76967479/659b29e4-524f-420b-9bcc-1bb5a8527294)
 
-![Figure_1](https://github.com/Platipipus645/Tamagoyaki/assets/76967479/f12ab9f1-1140-4779-8aea-38e337e7fca6)
+
+
+
+
 
